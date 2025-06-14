@@ -39,6 +39,19 @@ class AuthForm extends StatelessWidget {
               controller: emailController,
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
+                  enabledBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(color: Colors.blue),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide:
+                          const BorderSide(color: Colors.blue, width: 2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(color: Colors.red),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                 prefixIcon: const Icon(Icons.email),
                 labelText: 'Email',
                 border: OutlineInputBorder(
@@ -57,9 +70,23 @@ class AuthForm extends StatelessWidget {
               controller: passwordController,
               obscureText: true,
               decoration: InputDecoration(
+                  enabledBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(color: Colors.blue),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide:
+                          const BorderSide(color: Colors.blue, width: 2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(color: Colors.red),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                 prefixIcon: const Icon(Icons.lock),
                 labelText: 'Password',
                 border: OutlineInputBorder(
+                  
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
