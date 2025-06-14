@@ -29,15 +29,6 @@ class ProductListError extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            '$error',
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () =>
                 ref.read(paginatedProductsProvider.notifier).refresh(),

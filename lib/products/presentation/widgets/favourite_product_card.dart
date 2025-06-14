@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entity/product_entities.dart';
 import '../provider/favourite_provider.dart';
 import '../provider/user_provider.dart';
+import 'offline_aware_image.dart';
 
 class FavouriteProductCard extends ConsumerWidget {
   final Product product;
@@ -14,6 +15,12 @@ class FavouriteProductCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(userProvider(product.userId));
     final isFavoriteAsync = ref.watch(isFavoriteProvider(product.id));
+    final optimisticFavorite =
+        ref.watch(optimisticFavoriteProvider(product.id));
+    final toggleNotifier = ref.watch(favoriteToggleNotifierProvider);
+
+    final displayedFavoriteState = optimisticFavorite ??
+        isFavoriteAsync.maybeWhen(data: (data) => data, orElse: () => false);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -33,11 +40,16 @@ class FavouriteProductCard extends ConsumerWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              'https://picsum.photos/seed/${product.id}/600/300',
+            child: OfflineAwareImage(
+              imageUrl: 'https://picsum.photos/seed/${product.id}/600/300',
               height: 180,
               width: double.infinity,
               fit: BoxFit.cover,
+              placeholder: Container(
+                color: Colors.grey[200],
+                child: const Center(
+                    child: Icon(Icons.favorite, color: Colors.red)),
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -78,19 +90,49 @@ class FavouriteProductCard extends ConsumerWidget {
                   error: (_, __) => const Text('Error loading seller'),
                 ),
               ),
-              isFavoriteAsync.when(
-                data: (isFavorite) => IconButton(
-                  icon: Icon(
-                    isFavorite ? Icons.favorite : Icons.favorite_border,
-                    color: isFavorite ? Colors.red : null,
-                  ),
-                  onPressed: () => ref.read(
-                    toggleFavoriteProvider(product).future,
-                  ),
-                ),
-                loading: () => const CircularProgressIndicator(),
-                error: (_, __) => const Icon(Icons.error),
-              )
+              toggleNotifier.isLoading
+                  ? const CircularProgressIndicator()
+                  : IconButton(
+                      icon: Icon(
+                        (displayedFavoriteState == true)
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        color: (displayedFavoriteState == true)
+                            ? Colors.red
+                            : null,
+                      ),
+                      onPressed: () async {
+                        ref
+                            .read(
+                                optimisticFavoriteProvider(product.id).notifier)
+                            .toggleOptimistic();
+
+                        try {
+                          await ref
+                              .read(favoriteToggleNotifierProvider.notifier)
+                              .toggleFavorite(product);
+
+                          ref
+                              .read(optimisticFavoriteProvider(product.id)
+                                  .notifier)
+                              .resetToActual();
+                        } catch (e) {
+                          ref
+                              .read(optimisticFavoriteProvider(product.id)
+                                  .notifier)
+                              .toggleOptimistic();
+
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Failed to update favorite: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                    ),
             ],
           ),
         ],

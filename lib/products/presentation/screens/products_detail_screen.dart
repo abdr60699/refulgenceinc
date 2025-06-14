@@ -141,21 +141,12 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Failed to load product',
+                'Something Went Wrong',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   color: Colors.grey[800],
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '$e',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                ),
-                textAlign: TextAlign.center,
               ),
             ],
           ),

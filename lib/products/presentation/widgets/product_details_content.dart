@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entity/product_entities.dart';
 import '../../domain/entity/user_entities.dart';
 import '../provider/user_provider.dart';
+import 'offline_aware_image.dart';
 
 class ProductDetailsContent extends ConsumerWidget {
   final Product product;
@@ -24,12 +25,17 @@ class ProductDetailsContent extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Image.network(
-                'https://picsum.photos/seed/${product.id}/600/400',
-                height: 300,
+              borderRadius: BorderRadius.circular(12),
+              child: OfflineAwareImage(
+                imageUrl: 'https://picsum.photos/seed/${product.id}/600/300',
+                height: 180,
                 width: double.infinity,
                 fit: BoxFit.cover,
+                placeholder: Container(
+                  color: Colors.grey[200],
+                  child: const Center(
+                      child: Icon(Icons.favorite, color: Colors.red)),
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -55,8 +61,9 @@ class ProductDetailsContent extends ConsumerWidget {
                 final userAsync = ref.watch(userProvider(product.userId));
                 return userAsync.when(
                   data: (user) => _buildSellerInfo(user),
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => Text('Error loading seller: $e'),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => const Text('Somethine Went Wrong'),
                 );
               },
             ),

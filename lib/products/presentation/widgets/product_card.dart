@@ -5,6 +5,7 @@ import '../../domain/entity/product_entities.dart';
 import '../provider/favourite_provider.dart';
 import '../provider/user_provider.dart';
 import '../screens/products_detail_screen.dart';
+import 'offline_aware_image.dart';
 
 class ProductCard extends ConsumerWidget {
   final Product product;
@@ -15,6 +16,11 @@ class ProductCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(userProvider(product.userId));
     final isFavoriteAsync = ref.watch(isFavoriteProvider(product.id));
+    final optimisticFavorite =
+        ref.watch(optimisticFavoriteProvider(product.id));
+    final toggleNotifier = ref.watch(favoriteToggleNotifierProvider);
+    final displayedFavoriteState = optimisticFavorite ??
+        isFavoriteAsync.maybeWhen(data: (data) => data, orElse: () => false);
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 5),
@@ -34,8 +40,8 @@ class ProductCard extends ConsumerWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              'https://picsum.photos/seed/${product.id}/600/300',
+            child: OfflineAwareImage(
+              imageUrl: 'https://picsum.photos/seed/${product.id}/600/300',
               height: 180,
               width: double.infinity,
               fit: BoxFit.cover,
@@ -97,29 +103,58 @@ class ProductCard extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                isFavoriteAsync.when(
-                  data: (isFavorite) => IconButton(
-                    icon: Icon(
-                      isFavorite ? Icons.favorite : Icons.favorite_border,
-                      color: isFavorite ? Colors.red : Colors.grey,
-                    ),
-                    iconSize: 20,
-                    onPressed: () async {
-                      await ref.read(toggleFavoriteProvider(product).future);
+                toggleNotifier.isLoading
+                    ? const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : IconButton(
+                        icon: Icon(
+                          (displayedFavoriteState == true)
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          color: (displayedFavoriteState == true)
+                              ? Colors.red
+                              : Colors.grey,
+                        ),
+                        iconSize: 20,
+                        onPressed: () async {
+                          ref
+                              .read(optimisticFavoriteProvider(product.id)
+                                  .notifier)
+                              .toggleOptimistic();
 
-                      ref.invalidate(isFavoriteProvider(product.id));
-                    },
-                  ),
-                  loading: () => const Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-                  error: (_, __) => const Icon(Icons.error, size: 20),
-                ),
+                          try {
+                            await ref
+                                .read(favoriteToggleNotifierProvider.notifier)
+                                .toggleFavorite(product);
+
+                            ref
+                                .read(optimisticFavoriteProvider(product.id)
+                                    .notifier)
+                                .resetToActual();
+                          } catch (e) {
+                            ref
+                                .read(optimisticFavoriteProvider(product.id)
+                                    .notifier)
+                                .toggleOptimistic();
+
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content:
+                                      Text('Failed to update favorite: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                      ),
               ],
             ),
             loading: () => const LinearProgressIndicator(),
